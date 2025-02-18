@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { ObjectId } from "mongodb";
+import { ObjectId, returnDocument } from "mongodb";
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from "~/utils/validators";
 import { GET_DB } from "~/config/mongodb";
 import { BOARD_TYPES } from "~/utils/constants";
@@ -90,15 +90,28 @@ const getDetails = async (id) => {
   }
 };
 
+// Ham co nhiem vu: push 1 gia tri columnId vao cuoi mang columnOrderIds
+const pushColumnOrderIds = async (column) => {
+  try {
+    const result = await GET_DB()
+      .collection(BOARD_COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: new ObjectId(column.boardId) },
+        { $push: { columnOrderIds: new ObjectId(column._id) } },
+        { returnDocument: "after" }
+      );
+
+    return result.value;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   getDetails,
+  pushColumnOrderIds,
 };
-
-
-// boardID: 67a70e5fa316e8e86e3efab4
-// columnID: 67a713780a2efe199602898a
-// cardID: 67a714bf0a2efe199602898f
