@@ -2,8 +2,11 @@
 import { StatusCodes } from "http-status-codes";
 import { slugify } from "~/utils/formatters";
 import { boardModel } from "~/models/boardModel";
+import { columnModel } from "~/models/columnModel";
+import { cardModel } from "~/models/cardModel";
 import ApiError from "~/utils/ApiError";
 import { cloneDeep } from "lodash";
+import { ObjectId } from "mongodb";
 
 const createNew = async (reqBody) => {
   try {
@@ -58,9 +61,38 @@ const update = async (boardId, reqBody) => {
       ...reqBody,
       updatedAt: Date.now(),
     };
+
+    // Bien doi lien quan den ObjectId
+    if (updateData.columnOrderIds) {
+      updateData.columnOrderIds = updateData.columnOrderIds.map((_id) => new ObjectId(_id));
+    }
+
     const updatedBoard = await boardModel.update(boardId, updateData);
 
     return updatedBoard;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const moveCardToDifferentColumn = async (reqBody) => {
+  try {
+    // B1: Cap nhat mang cardOrderIds cua Column ban dau chua no (xoa _id cua Card ra khoi mang)
+    await columnModel.update(reqBody.prevColumnId, {
+      cardOrderIds: reqBody.prevCardOrderIds,
+      updatedAt: Date.now(),
+    });
+    // B2: Cap nhat mang cardOrderIds cua Column tiep theo (them _id cua Card vao mang)
+    await columnModel.update(reqBody.nextColumnId, {
+      cardOrderIds: reqBody.nextCardOrderIds,
+      updatedAt: Date.now(),
+    });
+    // B3: Cap nhat lai truong columnId moi cua cai Card da keo
+    await cardModel.update(reqBody.currentCardId, {
+      columnId: reqBody.nextColumnId,
+    });
+
+    return { updateResult: "Successfully!" };
   } catch (error) {
     throw error;
   }
@@ -70,4 +102,5 @@ export const boardService = {
   createNew,
   getDetails,
   update,
+  moveCardToDifferentColumn,
 };
