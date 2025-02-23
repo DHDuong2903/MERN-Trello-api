@@ -38,12 +38,12 @@ const createNew = async (data) => {
   }
 };
 
-const findOneById = async (id) => {
+const findOneById = async (boardId) => {
   try {
     const result = await GET_DB()
       .collection(BOARD_COLLECTION_NAME)
       .findOne({
-        _id: new ObjectId(id),
+        _id: new ObjectId(boardId),
       });
     return result;
   } catch (error) {
@@ -51,7 +51,7 @@ const findOneById = async (id) => {
   }
 };
 
-const getDetails = async (id) => {
+const getDetails = async (boardId) => {
   try {
     // const result = await GET_DB()
     //   .collection(BOARD_COLLECTION_NAME)
@@ -63,7 +63,7 @@ const getDetails = async (id) => {
       .aggregate([
         {
           $match: {
-            _id: new ObjectId(id),
+            _id: new ObjectId(boardId),
             _destroy: false,
           },
         },
@@ -109,6 +109,23 @@ const pushColumnOrderIds = async (column) => {
   }
 };
 
+// Lay 1 phan tu columnId ra khoi mang columnOrderIds
+const pullColumnOrderIds = async (column) => {
+  try {
+    const result = await GET_DB()
+      .collection(BOARD_COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: new ObjectId(column.boardId) },
+        { $pull: { columnOrderIds: new ObjectId(column._id) } },
+        { returnDocument: "after" }
+      );
+
+    return result;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 const update = async (boardId, updateData) => {
   try {
     Object.keys(updateData).forEach((fieldName) => {
@@ -134,4 +151,5 @@ export const boardModel = {
   getDetails,
   pushColumnOrderIds,
   update,
+  pullColumnOrderIds
 };
